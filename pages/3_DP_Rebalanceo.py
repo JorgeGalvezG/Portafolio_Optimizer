@@ -165,7 +165,7 @@ if ejecutar:
     retornos = np.log(precios / precios.shift(1)).dropna()
     retornos['CASH'] = RF / DIAS_ANIO
     tickers_optimizacion = list(retornos.columns)
-    N = len(tickers_validos)
+    N = len(tickers_optimizacion)
     mu_vec = retornos.mean().values * DIAS_ANIO
     Sigma = retornos.cov().values * DIAS_ANIO
 
