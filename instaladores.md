@@ -102,4 +102,4 @@ Una vez subido a GitHub, realiza el despliegue en la nube gratuita de Streamlit:
    * **Main file path:** Escribe `app.py`.
 5. Haz clic en el botón **"Deploy!"**.
 6. Streamlit Cloud leerá el archivo [requirements.txt](file:///D:/Tareas_momentaneas/Ciclo%205/ADA/portfolio_optimizer/requirements.txt), instalará todas las dependencias y levantará el servidor automáticamente.
-7. Copia la URL pública resultante (con formato `https://[proyecto].streamlit.app/`) para incluirla en el informe Word de entrega del curso.
+7. Copia la URL pública resultante para incluirla en el informe Word de entrega del curso (la URL oficial del Grupo 1 es: [https://grupo1-optimizador-portafolio.streamlit.app/](https://grupo1-optimizador-portafolio.streamlit.app/)).

@@ -1,5 +1,9 @@
 # 📈 Sistema de Optimización de Portafolio con GA y DP
 
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://grupo1-optimizador-portafolio.streamlit.app/)
+
+**URL del Sistema Desplegado (Producción):** [https://grupo1-optimizador-portafolio.streamlit.app/](https://grupo1-optimizador-portafolio.streamlit.app/)
+
 **Institución:** Universidad Nacional Mayor de San Marcos (UNMSM)  
 **Facultad:** Facultad de Ingeniería de Sistemas e Informática (FISI)  
 **Escuela Profesional:** Escuela Profesional de Ingeniería de Software  
@@ -8,9 +12,11 @@
 
 ---
 
-## 👥 Equipo de Desarrollo
+## 👥 Equipo de Desarrollo (Grupo 1)
 * **Jorge Luis Junior Galvez Garro**
-*
+* **Enrique Israel Espinoza Dioses**
+* **Jose Luis Reynoso Castillo**
+* **Junior Clisman Zelada Llaxa**
 
 ---
 
@@ -139,7 +145,7 @@ Para desplegar la aplicación de forma gratuita:
 3. Ingresar a [Streamlit Community Cloud](https://share.streamlit.io/) e iniciar sesión con la cuenta de GitHub.
 4. Seleccionar la opción **"Create app"**, elegir el repositorio, la rama (`main`) y establecer el archivo principal como `app.py`.
 5. Presionar **"Deploy!"**. Streamlit instalará las dependencias y compilará la aplicación.
-6. Copiar la URL pública asignada (ej. `https://[proyecto].streamlit.app/`) para su entrega.
+6. Copiar la URL pública asignada para su entrega (para el Grupo 1, la URL asignada es: [https://grupo1-optimizador-portafolio.streamlit.app/](https://grupo1-optimizador-portafolio.streamlit.app/)).
 
 ---
 
