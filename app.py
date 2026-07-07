@@ -188,6 +188,8 @@ if fecha_ini >= fecha_fin:
     st.sidebar.error("⚠️ La fecha de inicio debe ser anterior a la fecha de fin.")
 if not tickers_lista:
     st.sidebar.error("⚠️ Ingresa al menos un ticker.")
+if capital <= 0:
+    st.sidebar.error("⚠️ El capital debe ser mayor que 0.")
 
 # --------------------------------------------------------------------------- #
 # CONTENIDO PRINCIPAL
