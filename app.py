@@ -21,7 +21,7 @@ import streamlit as st
 # Configuración general de la página
 # --------------------------------------------------------------------------- #
 st.set_page_config(
-    page_title="Sistema de Optimización de Portafolio",
+    page_title="Dashboard Principal", # Modificado para mostrar este nombre
     page_icon="📈",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -248,6 +248,44 @@ if st.session_state.get("analisis_ejecutado"):
     )
 else:
     st.info("👈 Configura los parámetros y pulsa **Ejecutar Análisis** para comenzar.")
+
+# --------------------------------------------------------------------------- #
+# Equipo 1 y Docente
+# --------------------------------------------------------------------------- #
+st.markdown("---")
+st.markdown("### 🎓 Equipo 1")
+
+# Listado de integrantes dividido en dos columnas para mejor visibilidad
+col_eq1, col_eq2 = st.columns(2)
+
+with col_eq1:
+    st.markdown(
+        """
+        **Integrantes:**
+        * Cordero Alfaro, Renzo Pedro
+        * Cansaya Cutipa, Frank Manuel
+        * Ccapcha Espinoza, Bruno Rafhael
+        * Burga Montesinos, Jeanpiere Jesus
+        * Raymondes Peña, Jesús Grabiel
+        * Cacya Torocahua, Midwar Jose
+        """
+    )
+
+with col_eq2:
+    st.markdown(
+        """
+        <br>
+        
+        * Cencia Pérez, Alvaro Enrique
+        * Florencio Valenzuela, David Abraham
+        * Jaico Fernandez, Fernando Jose
+        * Purisaca Moquillaza, Joseph Francis
+        * Galvez Garro, Jorge Luis Junior
+        """,
+        unsafe_allow_html=True
+    )
+
+st.markdown(f"**Docente:** Ernesto Cancho Rodríguez")
 
 # --------------------------------------------------------------------------- #
 # Disclaimer
