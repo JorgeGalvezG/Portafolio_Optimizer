@@ -131,12 +131,15 @@ if capital <= 0:
 # --------------------------------------------------------------------------- #
 # Sliders del algoritmo
 # --------------------------------------------------------------------------- #
-col_s1, col_s2, col_s3 = st.columns([2, 2, 1])
+col_s1, col_s2, col_s3, col_s4 = st.columns([2, 2, 2, 1])
 with col_s1:
     MU_POP = st.slider("Tamaño de población (MU)", 50, 300, 100, step=10)
 with col_s2:
     NGEN = st.slider("Número de generaciones (NGEN)", 30, 200, 80, step=10)
 with col_s3:
+    # NUEVO: Slider dinámico para restringir el efectivo en el Algoritmo Genético
+    MAX_CASH = st.slider("Límite máx. Efectivo", 0.0, 1.0, 0.20, step=0.05, format="%.2f")
+with col_s4:
     st.write("")
     st.write("")
     ejecutar = st.button("🧬 Evolucionar")
@@ -191,7 +194,7 @@ def calcular_hv_2d(fitnesses, ref_point):
 # --------------------------------------------------------------------------- #
 # Configuración DEAP
 # --------------------------------------------------------------------------- #
-def construir_toolbox(mu_vec, Sigma, N):
+def construir_toolbox(mu_vec, Sigma, N, max_cash):
     if hasattr(creator, "FitnessMO"):
         del creator.FitnessMO
     if hasattr(creator, "Individual"):
@@ -202,7 +205,26 @@ def construir_toolbox(mu_vec, Sigma, N):
     def decodificar(ind):
         w = np.clip(np.array(ind, dtype=float), 0, None)
         s = w.sum()
-        return w / s if s > 1e-10 else np.ones(N) / N
+        if s > 1e-10:
+            w = w / s
+        else:
+            w = np.ones(N) / N
+            
+        # 2. RESTRICCIÓN DE EFECTIVO
+        # El activo CASH es el último (índice -1). Si supera el límite, lo reparamos.
+        if w[-1] > max_cash:
+            exceso = w[-1] - max_cash
+            w[-1] = max_cash
+            
+            # Redistribuir el exceso proporcionalmente entre las empresas mineras
+            suma_acciones = w[:-1].sum()
+            if suma_acciones > 1e-10:
+                w[:-1] += exceso * (w[:-1] / suma_acciones)
+            else:
+                # Caso extremo donde todas las acciones eran cero
+                w[:-1] += exceso / (N - 1)
+                
+        return w
 
     def evaluar(ind):
         w = decodificar(ind)
@@ -240,7 +262,7 @@ if ejecutar:
     mu_vec = retornos.mean().values * DIAS_ANIO
     Sigma = retornos.cov().values * DIAS_ANIO
 
-    tb, decodificar = construir_toolbox(mu_vec, Sigma, N)
+    tb, decodificar = construir_toolbox(mu_vec, Sigma, N, MAX_CASH)
 
     # Población inicial
     pop = tb.population(n=MU_POP)
@@ -307,8 +329,11 @@ if ejecutar:
             {"type": "eq", "fun": lambda w: w.sum() - 1},
             {"type": "eq", "fun": lambda w, o=objetivo: w @ mu_vec - o},
         ]
+
+        limites_mk = [(0.0, 1.0)] * (N - 1) + [(0.0, MAX_CASH)]
+        
         r = minimize(lambda w: np.sqrt(w @ Sigma @ w), np.ones(N) / N,
-                     method="SLSQP", bounds=[(0, 1)] * N, constraints=cons)
+                     method="SLSQP", bounds=limites_mk, constraints=cons)
         return np.sqrt(r.x @ Sigma @ r.x) if r.success else np.nan
 
     rets_mk = np.linspace(mu_vec.min(), mu_vec.max(), 200)
@@ -357,6 +382,7 @@ if ejecutar:
     st.session_state["nsga2_riqueza_reb"] = riqueza_reb
     st.session_state["nsga2_fechas_str"] = fechas_str
     st.session_state["nsga2_ejecutado"] = True
+    st.success(f"✅ Frente de Pareto: {len(frente_final)} portafolios no dominados.")
 
     # Guardar para el módulo de Comparación
     st.session_state["nsga2_pesos"] = dict(zip(tickers_optimizacion, w_ga.tolist()))
