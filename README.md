@@ -14,9 +14,16 @@
 
 ## 👥 Equipo de Desarrollo (Grupo 1)
 * **Jorge Luis Junior Galvez Garro**
-* **Enrique Israel Espinoza Dioses**
-* **Jose Luis Reynoso Castillo**
-* **Junior Clisman Zelada Llaxa**
+* **Cordero Alfaro, Renzo Pedro**
+* **Cansaya Cutipa, Frank Manuel**
+* **Ccapcha Espinoza Bruno Rafhael**
+* **Burga Montesinos. Jeanpiere Jesus**
+* **Raymondes Peña, Jesús Grabiel**
+* **Cacya Torocahua, Midwar Jose**
+* **Cencia Perez Alvaro Enrique**
+* **Florencio Valenzuela. David Abraham**
+* **Jaico Fernandez, Fernando Jose**
+* **Purisaca Moquillaza, Joseph Francis**
 
 ---
 
