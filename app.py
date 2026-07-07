@@ -99,6 +99,16 @@ st.markdown(
             border-radius: 6px;
             font-size: 0.88rem;
         }}
+        /* Renombrar 'app' a 'Dashboard Principal' en el menú lateral */
+        div[data-testid="stSidebarNav"] ul li:first-child a span {
+            font-size: 0 !important;
+        }
+        div[data-testid="stSidebarNav"] ul li:first-child a span::before {
+            content: "Dashboard Principal" !important;
+            font-size: 14px !important;
+            font-weight: 500;
+            color: var(--text-color);
+        }
     </style>
     """,
     unsafe_allow_html=True,
