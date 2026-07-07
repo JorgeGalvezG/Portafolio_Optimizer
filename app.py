@@ -160,6 +160,14 @@ with st.sidebar:
         format="%d",
     )
 
+    # NUEVO: Slider global de Límite de Efectivo
+    MAX_CASH = st.slider(
+        "Límite máx. Efectivo", 
+        0.0, 1.0, float(st.session_state.get("max_cash", 0.20)), 
+        step=0.05, 
+        format="%.2f"
+    )
+
     st.markdown("---")
     ejecutar = st.button("🚀 Ejecutar Análisis")
 
@@ -176,6 +184,7 @@ st.session_state["tickers"] = tickers_lista
 st.session_state["fecha_ini"] = fecha_ini
 st.session_state["fecha_fin"] = fecha_fin
 st.session_state["capital"] = int(capital)
+st.session_state["max_cash"] = float(MAX_CASH)
 
 if ejecutar:
     st.session_state["analisis_ejecutado"] = True
@@ -210,10 +219,11 @@ st.write(
 
 # Resumen de la configuración actual
 st.markdown("### Configuración actual")
-c1, c2, c3 = st.columns(3)
+c1, c2, c3, c4 = st.columns(4)
 c1.metric("Activos", f"{len(tickers_lista)}")
 c2.metric("Capital", f"${int(capital):,.0f}")
 c3.metric("Horizonte", f"{fecha_ini.year}–{fecha_fin.year}")
+c4.metric("Límite Efectivo", f"{MAX_CASH * 100:.0f}%")
 
 if tickers_lista:
     st.write("**Tickers seleccionados:** " + ", ".join(tickers_lista))
