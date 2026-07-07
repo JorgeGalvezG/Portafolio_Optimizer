@@ -177,7 +177,7 @@ if ejecutar:
     res = minimize(lambda w: np.sqrt(w @ Sigma @ w), 
                    np.ones(N) / N, 
                    method="SLSQP", 
-                   bounds=[(0, 1)] * N,
+                   bounds=limites_produccion,
                    constraints={"type": "eq", "fun": lambda w: w.sum() - 1})
     w_objetivo = res.x
 
