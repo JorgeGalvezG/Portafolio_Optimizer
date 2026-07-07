@@ -315,7 +315,7 @@ if ejecutar:
     ret_simples = precios.pct_change().dropna()
     w_ga = pesos_frente[idx_best]
 
-    riqueza_bh = [CAPITAL]
+    riqueza_bh = [capital]
     w_t = w_ga.copy()
     for i in range(len(ret_simples)):
         r = ret_simples.iloc[i].values
