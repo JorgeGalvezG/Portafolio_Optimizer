@@ -14,6 +14,7 @@ Ref.: Vaezi Jezeie et al. (2022). PLoS ONE 17(8), e0271811.
 
 import io
 import warnings
+import datetime as dt
 from itertools import product
 
 import numpy as np
@@ -34,46 +35,103 @@ AZUL, GRANATE, DORADO, VERDE = "#1F3864", "#800000", "#C5961A", "#2E7D32"
 DIAS_ANIO, RF = 252, 0.02
 
 st.markdown(
+    f"""
+    <style>
+        div[data-testid="stSidebarNav"] ul li:first-child a span {{
+            font-size: 0 !important;
+        }}
+        div[data-testid="stSidebarNav"] ul li:first-child a span::before {{
+            content: "Dashboard Principal" !important;
+            font-size: 14px !important;
+            font-weight: 500;
+        }}
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.markdown(
     f"<h1 style='color:{AZUL}'>🔁 Módulo 3 · Programación Dinámica (Rebalanceo)</h1>",
     unsafe_allow_html=True,
 )
 
 # --------------------------------------------------------------------------- #
-# Parámetros desde session_state
+# SIDEBAR — Configuración de Parámetros Globales
 # --------------------------------------------------------------------------- #
-TICKERS = st.session_state.get("tickers", ["FSM", "VOLCABC1.LM", "ABX.TO", "BVN", "BHP"])
-FECHA_INICIO = str(st.session_state.get("fecha_ini", "2015-01-01"))
-FECHA_FIN = str(st.session_state.get("fecha_fin", "2024-12-31"))
-CAPITAL = float(st.session_state.get("capital", 100_000))
+TICKERS_DEFAULT = "FSM, VOLCABC1.LM, ABX.TO, BVN, BHP"
+FECHA_INI_DEFAULT = dt.date(2015, 1, 1)
+FECHA_FIN_DEFAULT = dt.date(2024, 12, 31)
+CAPITAL_DEFAULT = 100_000
 
-st.caption(
-    f"**Universo:** {', '.join(TICKERS)}  |  **Periodo:** {FECHA_INICIO} → {FECHA_FIN}  "
-    f"|  **Capital:** ${CAPITAL:,.0f}"
-)
+with st.sidebar:
+    st.markdown(f"<h2 style='color:{AZUL};margin-bottom:0'>⚙️ Parámetros</h2>", unsafe_allow_html=True)
+    st.caption("Configuración global del análisis")
 
-if not TICKERS:
-    st.error("⚠️ No hay tickers configurados. Vuelve al inicio y define el universo.")
-    st.stop()
+    tickers_input = st.text_input(
+        "Tickers (separados por coma)",
+        value=st.session_state.get("tickers_raw", TICKERS_DEFAULT),
+    )
+
+    col_f1, col_f2 = st.columns(2)
+    with col_f1:
+        fecha_ini = st.date_input(
+            "Fecha inicio",
+            value=st.session_state.get("fecha_ini", FECHA_INI_DEFAULT),
+            min_value=dt.date(2000, 1, 1),
+            max_value=dt.date.today(),
+        )
+    with col_f2:
+        fecha_fin = st.date_input(
+            "Fecha fin",
+            value=st.session_state.get("fecha_fin", FECHA_FIN_DEFAULT),
+            min_value=dt.date(2000, 1, 1),
+            max_value=dt.date.today(),
+        )
+
+    capital = st.number_input(
+        "Capital a invertir (USD)",
+        min_value=1_000,
+        max_value=100_000_000,
+        value=st.session_state.get("capital", CAPITAL_DEFAULT),
+        step=1_000,
+        format="%d",
+    )
+
+    st.markdown("---")
+    st.caption("💡 Los parámetros se comparten entre todas las páginas.")
+
+tickers_lista = [t.strip().upper() for t in tickers_input.split(",") if t.strip()]
+
+st.session_state["tickers_raw"] = tickers_input
+st.session_state["tickers"] = tickers_lista
+st.session_state["fecha_ini"] = fecha_ini
+st.session_state["fecha_fin"] = fecha_fin
+st.session_state["capital"] = int(capital)
+
+if fecha_ini >= fecha_fin:
+    st.sidebar.error("⚠️ La fecha de inicio debe ser anterior a la fecha de fin.")
+if not tickers_lista:
+    st.sidebar.error("⚠️ Ingresa al menos un ticker.")
+if capital <= 0:
+    st.sidebar.error("⚠️ El capital debe ser mayor que 0.")
 
 # --------------------------------------------------------------------------- #
 # Sliders del modelo DP
 # --------------------------------------------------------------------------- #
 col_s1, col_s2, col_s3, col_s4 = st.columns([2, 2, 2, 1])
 with col_s1:
-    LAMBDA_TC = st.slider("λ_TC (costo de transacción)", 0.0001, 0.01, 0.001,
-                          step=0.0001, format="%.4f")
+    LAMBDA_TC = st.slider("λ_TC (costo de transacción)", 0.0001, 0.01, 0.001, step=0.0001, format="%.4f")
 with col_s2:
     T_PERIODOS = st.slider("T (periodos de rebalanceo)", 4, 52, 12, step=1)
 with col_s3:
-    PASO_GRILLA = st.slider("Paso de grilla (discretización)", 0.02, 0.20, 0.20,
-                            step=0.02, format="%.2f")
+    PASO_GRILLA = st.slider("Paso de grilla (discretización)", 0.02, 0.20, 0.20, step=0.02, format="%.2f")
 with col_s4:
     st.write("")
     st.write("")
     ejecutar = st.button("🔁 Ejecutar DP")
 
 # --------------------------------------------------------------------------- #
-# Descarga de datos (cacheada)
+# Descarga de datos (cacheada) y Generación de Grilla
 # --------------------------------------------------------------------------- #
 @st.cache_data(show_spinner=False)
 def cargar_datos(tickers, inicio, fin):
@@ -87,7 +145,7 @@ def cargar_datos(tickers, inicio, fin):
     return precios
 
 def generar_grilla(paso, N):
-    """Genera pesos discretizados que suman 1 (composiciones enteras)."""
+    """Genera pesos discretizados que suman 1 (compomposiciones enteras)."""
     pasos = np.arange(0, 1 + paso / 2, paso)
     grilla = [np.array(combo) for combo in product(pasos, repeat=N)
               if abs(sum(combo) - 1.0) < 1e-6]
@@ -98,14 +156,16 @@ def generar_grilla(paso, N):
 # --------------------------------------------------------------------------- #
 if ejecutar:
     np.random.seed(42)
-    precios = cargar_datos(TICKERS, FECHA_INICIO, FECHA_FIN)
+    precios = cargar_datos(tickers_lista, fecha_ini, fecha_fin)
     if precios.empty or precios.shape[1] == 0:
         st.error("No se pudieron descargar datos válidos para los tickers indicados.")
         st.stop()
 
     tickers_validos = list(precios.columns)
-    N = len(tickers_validos)
     retornos = np.log(precios / precios.shift(1)).dropna()
+    retornos['CASH'] = RF / DIAS_ANIO
+    tickers_optimizacion = list(retornos.columns)
+    N = len(tickers_validos)
     mu_vec = retornos.mean().values * DIAS_ANIO
     Sigma = retornos.cov().values * DIAS_ANIO
 
@@ -171,6 +231,7 @@ if ejecutar:
 
     # Simulación de las 3 estrategias
     ret_simples = precios.pct_change().dropna()
+    ret_simples['CASH'] = RF / DIAS_ANIO
 
     def simular(w_init, rebalancear_fn):
         riqueza = [CAPITAL]
@@ -248,7 +309,7 @@ if ejecutar:
         "riqueza_sr": float(riq_sr[-1]),
         "costos_dp": float(costos_dp),
     }
-    st.session_state["dp_pesos"] = dict(zip(tickers_validos, w_objetivo.tolist()))
+    st.session_state["dp_pesos"] = dict(zip(tickers_optimizacion, w_objetivo.tolist()))
 
 # --------------------------------------------------------------------------- #
 # Renderizar UI con datos de session_state si está ejecutado
