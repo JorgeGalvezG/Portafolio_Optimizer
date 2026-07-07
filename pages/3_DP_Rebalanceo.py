@@ -126,6 +126,9 @@ with col_s2:
 with col_s3:
     PASO_GRILLA = st.slider("Paso de grilla (discretización)", 0.02, 0.20, 0.20, step=0.02, format="%.2f")
 with col_s4:
+    # NUEVO: Slider dinámico para restringir el efectivo
+    MAX_CASH = st.slider("Límite máx. Efectivo", 0.0, 1.0, 0.20, step=0.05, format="%.2f")
+with col_s5:
     st.write("")
     st.write("")
     ejecutar = st.button("🔁 Ejecutar DP")
@@ -144,11 +147,11 @@ def cargar_datos(tickers, inicio, fin):
     precios = precios.dropna(how="all").dropna()
     return precios
 
-def generar_grilla(paso, N):
-    """Genera pesos discretizados que suman 1 (compomposiciones enteras)."""
+def generar_grilla(paso, N, max_cash):
+    """Genera pesos discretizados que suman 1 (composiciones enteras) respetando el límite de efectivo."""
     pasos = np.arange(0, 1 + paso / 2, paso)
     grilla = [np.array(combo) for combo in product(pasos, repeat=N)
-              if abs(sum(combo) - 1.0) < 1e-6]
+              if abs(sum(combo) - 1.0) < 1e-6 and combo[-1] <= (max_cash + 1e-6)]
     return np.array(grilla)
 
 # --------------------------------------------------------------------------- #
@@ -169,6 +172,7 @@ if ejecutar:
     mu_vec = retornos.mean().values * DIAS_ANIO
     Sigma = retornos.cov().values * DIAS_ANIO
 
+    limites_produccion = [(0.0, 1.0)] * (N - 1) + [(0.0, MAX_CASH)]
     # Portafolio objetivo: mínima varianza
     res = minimize(lambda w: np.sqrt(w @ Sigma @ w), 
                    np.ones(N) / N, 
@@ -177,7 +181,7 @@ if ejecutar:
                    constraints={"type": "eq", "fun": lambda w: w.sum() - 1})
     w_objetivo = res.x
 
-    grilla = generar_grilla(PASO_GRILLA, N)
+    grilla = generar_grilla(PASO_GRILLA, N, MAX_CASH)
     G = len(grilla)
 
     # Complejidad
