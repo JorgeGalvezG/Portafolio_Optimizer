@@ -42,10 +42,11 @@ TICKERS = st.session_state.get("tickers", ["FSM", "VOLCABC1.LM", "ABX.TO", "BVN"
 FECHA_INICIO = str(st.session_state.get("fecha_ini", "2015-01-01"))
 FECHA_FIN = str(st.session_state.get("fecha_fin", "2024-12-31"))
 CAPITAL = float(st.session_state.get("capital", 100_000))
+MAX_CASH = float(st.session_state.get("max_cash", 0.20))
 
 st.caption(
     f"**Universo:** {', '.join(TICKERS)}  |  **Periodo:** {FECHA_INICIO} → {FECHA_FIN}  "
-    f"|  **Capital:** ${CAPITAL:,.0f}"
+    f"|  **Capital:** ${CAPITAL:,.0f}  |  🛡️ **Límite Efectivo:** {MAX_CASH * 100:.0f}%"
 )
 
 if not TICKERS:
@@ -72,23 +73,36 @@ def cargar_datos(tickers, inicio, fin):
 # Cálculo de todos los métodos (cacheado por parámetros)
 # --------------------------------------------------------------------------- #
 @st.cache_data(show_spinner=False)
-def calcular_estrategias(tickers, inicio, fin, capital):
+def calcular_estrategias(tickers, inicio, fin, capital, max_cash):
     np.random.seed(SEMILLA)
     random.seed(SEMILLA)
 
     precios = cargar_datos(tickers, inicio, fin)
-    tickers_validos = list(precios.columns)
-    N = len(tickers_validos)
+    
+    # 1. PREPARACIÓN E INYECCIÓN DE CASH
     retornos_log = np.log(precios / precios.shift(1)).dropna()
     ret_simples = precios.pct_change().dropna()
+    
+    # Inyectar rentabilidad del activo libre de riesgo
+    retornos_log['CASH'] = RF / DIAS_ANIO
+    ret_simples['CASH'] = RF / DIAS_ANIO
+    
+    tickers_validos = list(retornos_log.columns)
+    N = len(tickers_validos)
+    
     mu_vec = retornos_log.mean().values * DIAS_ANIO
     Sigma = retornos_log.cov().values * DIAS_ANIO
+    
+    # Límite global: Las acciones van de 0 a 1, CASH (último) tiene tope de max_cash
+    limites_produccion = [(0.0, 1.0)] * (N - 1) + [(0.0, max_cash)]
 
     # --- Markowitz: máximo Sharpe ---
     def neg_sharpe(w):
-        return -(w @ mu_vec - RF) / np.sqrt(w @ Sigma @ w)
+        # abs() para proteger de errores de precisión flotante con el CASH
+        return -(w @ mu_vec - RF) / np.sqrt(abs(w @ Sigma @ w))
+        
     w_markowitz = minimize(neg_sharpe, np.ones(N) / N, method="SLSQP",
-                           bounds=[(0, 1)] * N,
+                           bounds=limites_produccion,
                            constraints={"type": "eq", "fun": lambda w: w.sum() - 1}).x
 
     # --- NSGA-II ---
@@ -99,15 +113,30 @@ def calcular_estrategias(tickers, inicio, fin, capital):
     creator.create("FitM4", base.Fitness, weights=(-1.0, -1.0))
     creator.create("IndM4", list, fitness=creator.FitM4)
 
+    def decodificar(ind):
+        w = np.clip(np.array(ind, dtype=float), 0, None)
+        s = w.sum()
+        w = w / s if s > 1e-10 else np.ones(N) / N
+        
+        # Restricción de efectivo
+        if w[-1] > max_cash:
+            exceso = w[-1] - max_cash
+            w[-1] = max_cash
+            suma_acciones = w[:-1].sum()
+            if suma_acciones > 1e-10:
+                w[:-1] += exceso * (w[:-1] / suma_acciones)
+            else:
+                w[:-1] += exceso / (N - 1)
+        return w
+
     tb = base.Toolbox()
     tb.register("attr_float", random.random)
     tb.register("individual", tools.initRepeat, creator.IndM4, tb.attr_float, n=N)
     tb.register("population", tools.initRepeat, list, tb.individual)
 
     def eval_ga(ind):
-        w = np.clip(np.array(ind), 0, None)
-        w = w / w.sum() if w.sum() > 0 else np.ones(N) / N
-        return (-(w @ mu_vec), np.sqrt(w @ Sigma @ w))
+        w = decodificar(ind)
+        return (-(w @ mu_vec), np.sqrt(abs(w @ Sigma @ w)))
 
     tb.register("evaluate", eval_ga)
     tb.register("mate", tools.cxSimulatedBinaryBounded, low=0, up=1, eta=20)
@@ -131,18 +160,26 @@ def calcular_estrategias(tickers, inicio, fin, capital):
         for i in [x for x in off if not x.fitness.valid]:
             i.fitness.values = tb.evaluate(i)
         pop = tb.select(pop + off, 80)
+        
     frente = tools.sortNondominated(pop, len(pop), first_front_only=True)[0]
     pts_ga = np.array([i.fitness.values for i in frente])
     pts_ga[:, 0] *= -1
     best_ga = int(np.argmax(pts_ga[:, 0] / pts_ga[:, 1]))
-    w_ga = np.clip(np.array(frente[best_ga]), 0, None)
-    w_ga /= w_ga.sum()
+    
+    # Decodificamos el mejor individuo para asegurar que respete los límites
+    w_ga = decodificar(frente[best_ga])
 
     # --- DP: mínima varianza como proxy ---
-    w_dp = minimize(lambda w: np.sqrt(w @ Sigma @ w), np.ones(N) / N, method="SLSQP",
-                    bounds=[(0, 1)] * N,
+    w_dp = minimize(lambda w: np.sqrt(abs(w @ Sigma @ w)), np.ones(N) / N, method="SLSQP",
+                    bounds=limites_produccion,
                     constraints={"type": "eq", "fun": lambda w: w.sum() - 1}).x
+                    
+    # --- Equiponderado ---
     w_eq = np.ones(N) / N
+    if w_eq[-1] > max_cash:
+        exceso = w_eq[-1] - max_cash
+        w_eq[-1] = max_cash
+        w_eq[:-1] += exceso / (N - 1)
 
     # --- Simulación ---
     def simular(w_opt, rebalancear=False):
@@ -174,6 +211,7 @@ def calcular_estrategias(tickers, inicio, fin, capital):
              "NSGA-II": dict(zip(tickers_validos, w_ga)),
              "DP (MínVar)": dict(zip(tickers_validos, w_dp)),
              "Equiponderado": dict(zip(tickers_validos, w_eq))}
+             
     return estrategias, [str(f.date()) for f in fechas], pesos
 
 
@@ -202,7 +240,7 @@ def metricas(riqueza, capital):
 # --------------------------------------------------------------------------- #
 with st.spinner("Calculando y comparando todos los métodos..."):
     estrategias, fechas, pesos = calcular_estrategias(
-        tuple(TICKERS), FECHA_INICIO, FECHA_FIN, CAPITAL
+        tuple(TICKERS), FECHA_INICIO, FECHA_FIN, CAPITAL, MAX_CASH
     )
 
 # Tabla de métricas
