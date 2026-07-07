@@ -12,6 +12,7 @@ Parámetros base (tickers, fechas, capital) desde st.session_state.
 import io
 import random
 import warnings
+import datetime as dt
 
 import numpy as np
 import pandas as pd
@@ -31,18 +32,110 @@ AZUL, GRANATE, DORADO = "#1F3864", "#800000", "#C5961A"
 DIAS_ANIO, RF, SEMILLA = 252, 0.02, 42
 
 st.markdown(
+    """
+    <style>
+        div[data-testid="stSidebarNav"] ul li:first-child a span {
+            font-size: 0 !important;
+        }
+        div[data-testid="stSidebarNav"] ul li:first-child a span::before {
+            content: "Dashboard Principal" !important;
+            font-size: 14px !important;
+            font-weight: 500;
+            color: var(--text-color);
+        }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.markdown(
     f"<h1 style='color:{AZUL}'>🏆 Módulo 4 · Comparación de Métodos</h1>",
     unsafe_allow_html=True,
 )
 
 # --------------------------------------------------------------------------- #
-# Parámetros desde session_state
+# NUEVO: SIDEBAR — Configuración de Parámetros
 # --------------------------------------------------------------------------- #
-TICKERS = st.session_state.get("tickers", ["FSM", "VOLCABC1.LM", "ABX.TO", "BVN", "BHP"])
-FECHA_INICIO = str(st.session_state.get("fecha_ini", "2015-01-01"))
-FECHA_FIN = str(st.session_state.get("fecha_fin", "2024-12-31"))
-CAPITAL = float(st.session_state.get("capital", 100_000))
-MAX_CASH = float(st.session_state.get("max_cash", 0.20))
+TICKERS_DEFAULT = "FSM, VOLCABC1.LM, ABX.TO, BVN, BHP"
+FECHA_INI_DEFAULT = dt.date(2015, 1, 1)
+FECHA_FIN_DEFAULT = dt.date(2024, 12, 31)
+CAPITAL_DEFAULT = 100_000
+
+with st.sidebar:
+    st.markdown(f"<h2 style='color:{AZUL};margin-bottom:0'>⚙️ Parámetros</h2>",
+                unsafe_allow_html=True)
+    st.caption("Configuración global del análisis")
+
+    tickers_input = st.text_input(
+        "Tickers (separados por coma)",
+        value=st.session_state.get("tickers_raw", TICKERS_DEFAULT),
+        help="Símbolos de Yahoo Finance. Ej: FSM, BHP, BVN",
+    )
+
+    col_f1, col_f2 = st.columns(2)
+    with col_f1:
+        fecha_ini = st.date_input(
+            "Fecha inicio",
+            value=st.session_state.get("fecha_ini", FECHA_INI_DEFAULT),
+            min_value=dt.date(2000, 1, 1),
+            max_value=dt.date.today(),
+        )
+    with col_f2:
+        fecha_fin = st.date_input(
+            "Fecha fin",
+            value=st.session_state.get("fecha_fin", FECHA_FIN_DEFAULT),
+            min_value=dt.date(2000, 1, 1),
+            max_value=dt.date.today(),
+        )
+
+    capital = st.number_input(
+        "Capital a invertir (USD)",
+        min_value=1_000,
+        max_value=100_000_000,
+        value=st.session_state.get("capital", CAPITAL_DEFAULT),
+        step=1_000,
+        format="%d",
+    )
+    
+    MAX_CASH = st.slider(
+        "Límite máx. Efectivo", 
+        0.0, 1.0, float(st.session_state.get("max_cash", 0.20)), 
+        step=0.05, 
+        format="%.2f"
+    )
+
+    st.markdown("---")
+    ejecutar = st.button("🚀 Ejecutar Análisis")
+
+    st.markdown("---")
+    st.caption("💡 Los parámetros se comparten entre todas las páginas.")
+
+# Sincronización y reactividad con session_state
+tickers_lista = [t.strip().upper() for t in tickers_input.split(",") if t.strip()]
+
+st.session_state["tickers_raw"] = tickers_input
+st.session_state["tickers"] = tickers_lista
+st.session_state["fecha_ini"] = fecha_ini
+st.session_state["fecha_fin"] = fecha_fin
+st.session_state["capital"] = int(capital)
+st.session_state["max_cash"] = float(MAX_CASH)
+
+if ejecutar:
+    st.session_state["analisis_ejecutado"] = True
+
+# Validaciones
+if fecha_ini >= fecha_fin:
+    st.sidebar.error("⚠️ La fecha de inicio debe ser anterior a la fecha de fin.")
+if not tickers_lista:
+    st.sidebar.error("⚠️ Ingresa al menos un ticker.")
+if capital <= 0:
+    st.sidebar.error("⚠️ El capital debe ser mayor que 0.")
+
+# Variables finales para usar en el resto del módulo
+TICKERS = tickers_lista
+FECHA_INICIO = str(fecha_ini)
+FECHA_FIN = str(fecha_fin)
+CAPITAL = float(capital)
 
 st.caption(
     f"**Universo:** {', '.join(TICKERS)}  |  **Periodo:** {FECHA_INICIO} → {FECHA_FIN}  "
@@ -52,8 +145,6 @@ st.caption(
 if not TICKERS:
     st.error("⚠️ No hay tickers configurados. Vuelve al inicio y define el universo.")
     st.stop()
-
-COLORES = ["#1F3864", "#3B5B8C", "#800000", "#B04A4A", "#C5961A", "#E0B64D", "#8A8D93"]
 
 # --------------------------------------------------------------------------- #
 # Datos (cacheado)
