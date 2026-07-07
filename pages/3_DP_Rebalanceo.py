@@ -384,7 +384,7 @@ if st.session_state.get("dp_ejecutado"):
     fig.add_trace(go.Scatter(x=fechas, y=riq_sr, mode="lines",
                              line=dict(color=VERDE, width=2, dash="dot"),
                              name=f"Siempre Rebalanceado (${riq_sr[-1]:,.0f})"))
-    fig.add_hline(y=CAPITAL, line=dict(color="gray", dash="dash"), opacity=0.5)
+    fig.add_hline(y=capital, line=dict(color="gray", dash="dash"), opacity=0.5)
 
     # Agregar marcadores en los puntos donde ocurrió rebalanceo DP
     if reb_fechas_dp_str:
