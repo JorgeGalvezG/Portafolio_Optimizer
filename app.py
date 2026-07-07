@@ -18,10 +18,10 @@ import datetime as dt
 import streamlit as st
 
 # --------------------------------------------------------------------------- #
-# Configuración general de la página
+# Configuración general de la página (Pestaña del navegador)
 # --------------------------------------------------------------------------- #
 st.set_page_config(
-    page_title="Dashboard Principal", # Modificado para mostrar este nombre
+    page_title="Dashboard Principal", 
     page_icon="📈",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -44,6 +44,16 @@ st.markdown(
         }}
         .stApp {{
             background-color: #FFFFFF;
+        }}
+
+        /* MODIFICACIÓN: Hack CSS para renombrar 'app' a 'Dashboard Principal' en el menú de la barra lateral */
+        div[data-testid="stSidebarNav"] ul li:first-child a span {{
+            font-size: 0 !important;
+        }}
+        div[data-testid="stSidebarNav"] ul li:first-child a span::before {{
+            content: "Dashboard Principal" !important;
+            font-size: 14px !important; /* Tamaño estándar del menú de Streamlit */
+            font-weight: 500;
         }}
 
         /* Títulos */
@@ -115,7 +125,7 @@ FECHA_FIN_DEFAULT = dt.date(2024, 12, 31)
 CAPITAL_DEFAULT = 100_000
 
 # --------------------------------------------------------------------------- #
-# SIDEBAR — visible en todas las páginas
+# SIDEBAR — Configuración de Parámetros
 # --------------------------------------------------------------------------- #
 with st.sidebar:
     st.markdown(f"<h2 style='color:{AZUL};margin-bottom:0'>⚙️ Parámetros</h2>",
