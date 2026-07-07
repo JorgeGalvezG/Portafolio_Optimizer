@@ -170,8 +170,11 @@ if ejecutar:
     Sigma = retornos.cov().values * DIAS_ANIO
 
     # Portafolio objetivo: mínima varianza
-   res = minimize(lambda w: np.sqrt(w @ Sigma @ w), np.ones(N) / N, method="SLSQP",
-                   bounds=[(0, 1)] * N, constraints={"type": "eq", "fun": lambda w: w.sum() - 1})
+   res = minimize(lambda w: np.sqrt(w @ Sigma @ w), 
+                  np.ones(N) / N, 
+                  method="SLSQP", 
+                  bounds=[(0, 1)] * N, 
+                  constraints={"type": "eq", "fun": lambda w: w.sum() - 1})
     w_objetivo = res.x
 
     grilla = generar_grilla(PASO_GRILLA, N)
