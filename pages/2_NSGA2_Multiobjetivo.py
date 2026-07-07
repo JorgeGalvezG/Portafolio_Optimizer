@@ -382,7 +382,6 @@ if ejecutar:
     st.session_state["nsga2_riqueza_reb"] = riqueza_reb
     st.session_state["nsga2_fechas_str"] = fechas_str
     st.session_state["nsga2_ejecutado"] = True
-    st.success(f"✅ Frente de Pareto: {len(frente_final)} portafolios no dominados.")
 
     # Guardar para el módulo de Comparación
     st.session_state["nsga2_pesos"] = dict(zip(tickers_optimizacion, w_ga.tolist()))
