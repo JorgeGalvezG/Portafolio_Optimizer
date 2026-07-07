@@ -115,6 +115,7 @@ st.session_state["tickers"] = tickers_lista
 st.session_state["fecha_ini"] = fecha_ini
 st.session_state["fecha_fin"] = fecha_fin
 st.session_state["capital"] = int(capital)
+tickers_validos = st.session_state.get("tickers", ["FSM", "VOLCABC1.LM", "ABX.TO", "BVN", "BHP"])
 
 if ejecutar:
     st.session_state["analisis_ejecutado"] = True
@@ -232,8 +233,10 @@ if ejecutar:
         st.stop()
 
     tickers_validos = list(precios.columns)
-    N = len(tickers_validos)
     retornos = np.log(precios / precios.shift(1)).dropna()
+    retornos['CASH'] = RF / DIAS_ANIO
+    tickers_optimizacion = list(retornos.columns)
+    N = len(tickers_optimizacion)
     mu_vec = retornos.mean().values * DIAS_ANIO
     Sigma = retornos.cov().values * DIAS_ANIO
 
@@ -345,7 +348,7 @@ if ejecutar:
     st.session_state["nsga2_idx_best"] = idx_best
     st.session_state["nsga2_i_cons"] = i_cons
     st.session_state["nsga2_i_agr"] = i_agr
-    st.session_state["nsga2_tickers_validos"] = tickers_validos
+    st.session_state["nsga2_tickers_optimizacion"] = tickers_optimizacion
     st.session_state["nsga2_vols_mk"] = vols_mk
     st.session_state["nsga2_rets_mk"] = rets_mk
     st.session_state["nsga2_hypervolumes"] = hypervolumes
@@ -355,7 +358,7 @@ if ejecutar:
     st.session_state["nsga2_ejecutado"] = True
 
     # Guardar para el módulo de Comparación
-    st.session_state["nsga2_pesos"] = dict(zip(tickers_validos, w_ga.tolist()))
+    st.session_state["nsga2_pesos"] = dict(zip(tickers_optimizacion, w_ga.tolist()))
     st.session_state["nsga2_metricas"] = {
         "retorno": float(pts[idx_best, 0]),
         "volatilidad": float(pts[idx_best, 1]),
@@ -374,7 +377,7 @@ if st.session_state.get("nsga2_ejecutado"):
     idx_best = st.session_state["nsga2_idx_best"]
     i_cons = st.session_state["nsga2_i_cons"]
     i_agr = st.session_state["nsga2_i_agr"]
-    tickers_validos = st.session_state["nsga2_tickers_validos"]
+    tickers_optimizacion = st.session_state["nsga2_tickers_optimizacion"]
     vols_mk = st.session_state["nsga2_vols_mk"]
     rets_mk = st.session_state["nsga2_rets_mk"]
     hypervolumes = st.session_state["nsga2_hypervolumes"]
@@ -398,7 +401,7 @@ if st.session_state.get("nsga2_ejecutado"):
     hover_text = []
     for w in pesos_frente:
         detalle = "<br>".join(
-            f"{t}: {wi*100:.1f}%" for t, wi in zip(tickers_validos, w) if wi > 0.01
+            f"{t}: {wi*100:.1f}%" for t, wi in zip(tickers_optimizacion, w) if wi > 0.01
         )
         hover_text.append(detalle)
 
@@ -441,7 +444,7 @@ if st.session_state.get("nsga2_ejecutado"):
     for col, (nombre, idx) in zip(cols, perfiles.items()):
         with col:
             w = pesos_frente[idx]
-            df_w = pd.DataFrame({"Activo": tickers_validos, "Peso": w})
+            df_w = pd.DataFrame({"Activo": tickers_optimizacion, "Peso": w})
             df_w = df_w[df_w["Peso"] > 0.01]
             fig_p = px.pie(df_w, names="Activo", values="Peso", hole=0.35,
                            color_discrete_sequence=paleta)
@@ -492,7 +495,7 @@ if st.session_state.get("nsga2_ejecutado"):
                 "Retorno_%": pts[k, 0] * 100,
                 "Volatilidad_%": pts[k, 1] * 100,
                 "Sharpe": sharpe_frente[k]}
-        fila.update({t: wi for t, wi in zip(tickers_validos, w)})
+        fila.update({t: wi for t, wi in zip(tickers_optimizacion, w)})
         filas.append(fila)
     df_pareto = pd.DataFrame(filas)
 
@@ -500,9 +503,9 @@ if st.session_state.get("nsga2_ejecutado"):
 
     # 3 portafolios representativos para Excel
     df_representativos = pd.DataFrame([
-        {"Perfil": "Conservador", "Retorno_%": pts[i_cons, 0]*100, "Volatilidad_%": pts[i_cons, 1]*100, "Sharpe": sharpe_frente[i_cons], **dict(zip(tickers_validos, pesos_frente[i_cons]))},
-        {"Perfil": "Máximo Sharpe", "Retorno_%": pts[idx_best, 0]*100, "Volatilidad_%": pts[idx_best, 1]*100, "Sharpe": sharpe_frente[idx_best], **dict(zip(tickers_validos, pesos_frente[idx_best]))},
-        {"Perfil": "Agresivo", "Retorno_%": pts[i_agr, 0]*100, "Volatilidad_%": pts[i_agr, 1]*100, "Sharpe": sharpe_frente[i_agr], **dict(zip(tickers_validos, pesos_frente[i_agr]))},
+        {"Perfil": "Conservador", "Retorno_%": pts[i_cons, 0]*100, "Volatilidad_%": pts[i_cons, 1]*100, "Sharpe": sharpe_frente[i_cons], **dict(zip(tickers_optimizacion, pesos_frente[i_cons]))},
+        {"Perfil": "Máximo Sharpe", "Retorno_%": pts[idx_best, 0]*100, "Volatilidad_%": pts[idx_best, 1]*100, "Sharpe": sharpe_frente[idx_best], **dict(zip(tickers_optimizacion, pesos_frente[idx_best]))},
+        {"Perfil": "Agresivo", "Retorno_%": pts[i_agr, 0]*100, "Volatilidad_%": pts[i_agr, 1]*100, "Sharpe": sharpe_frente[i_agr], **dict(zip(tickers_optimizacion, pesos_frente[i_agr]))},
     ])
 
     buffer = io.BytesIO()
