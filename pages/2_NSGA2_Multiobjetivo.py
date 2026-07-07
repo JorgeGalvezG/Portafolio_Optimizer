@@ -323,7 +323,7 @@ if ejecutar:
         w_t = w_t * (1 + r)
         w_t /= w_t.sum()
 
-    riqueza_reb = [CAPITAL]
+    riqueza_reb = [capital]
     w_t = w_ga.copy()
     ult_mes = ret_simples.index[0].month
     for i in range(len(ret_simples)):
