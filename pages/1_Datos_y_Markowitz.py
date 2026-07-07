@@ -98,6 +98,15 @@ with st.sidebar:
         format="%d",
     )
 
+    # NUEVO: Slider dinámico para el límite de efectivo global
+    MAX_CASH = st.slider(
+        "Límite máx. Efectivo", 
+        0.0, 1.0, 0.20, 
+        step=0.05, 
+        format="%.2f",
+        help="Porcentaje máximo del portafolio que puede mantenerse en CASH."
+    )
+
     st.markdown("---")
     ejecutar = st.button("🚀 Ejecutar Análisis")
 
@@ -112,6 +121,7 @@ st.session_state["tickers"] = tickers_lista
 st.session_state["fecha_ini"] = fecha_ini
 st.session_state["fecha_fin"] = fecha_fin
 st.session_state["capital"] = int(capital)
+st.session_state["max_cash"] = float(MAX_CASH) # Guardamos el límite para los demás módulos
 
 if ejecutar:
     st.session_state["analisis_ejecutado"] = True
@@ -131,6 +141,7 @@ TICKERS = st.session_state.get("tickers", ["FSM", "VOLCABC1.LM", "ABX.TO", "BVN"
 START_DATE = str(st.session_state.get("fecha_ini", "2015-01-01"))
 END_DATE = str(st.session_state.get("fecha_fin", "2024-12-31"))
 CAPITAL_INICIAL = float(st.session_state.get("capital", 100_000))
+MAX_CASH_LIMIT = float(st.session_state.get("max_cash", 0.20))
 
 st.caption(
     f"**Universo:** {', '.join(TICKERS)}  |  **Periodo:** {START_DATE} → {END_DATE}  "
@@ -158,7 +169,8 @@ def descargar_precios(tickers, start, end):
 # --------------------------------------------------------------------------- #
 def portfolio_performance(weights, mu, Sigma):
     p_ret = np.sum(mu * weights)
-    p_std = np.sqrt(np.dot(weights.T, np.dot(Sigma, weights)))
+    # NUEVO: abs() protege contra errores de dominio matemático (raíz de negativo) por redondeos
+    p_std = np.sqrt(abs(np.dot(weights.T, np.dot(Sigma, weights))))
     return p_ret, p_std
 
 
@@ -208,9 +220,16 @@ with st.spinner("Optimizando portafolio..."):
 
     num_assets = len(TICKERS_EXT)
     constraints = ({"type": "eq", "fun": lambda x: np.sum(x) - 1},)
-    bounds = tuple((0.0, 1.0) for _ in range(num_assets))
+    limites_produccion = [(0.0, 1.0)] * (num_assets - 1) + [(0.0, MAX_CASH_LIMIT)]
+    bounds = tuple(limites_produccion)
     init_guess = np.array(num_assets * [1.0 / num_assets])
 
+    # Si el guess inicial supera el límite de efectivo, lo rebalanceamos para no causar errores en SLSQP
+    if init_guess[-1] > MAX_CASH_LIMIT:
+        exceso = init_guess[-1] - MAX_CASH_LIMIT
+        init_guess[-1] = MAX_CASH_LIMIT
+        init_guess[:-1] += exceso / (num_assets - 1)
+    
     # 3. Máximo Sharpe
     opt_sharpe = minimize(
         negative_sharpe_ratio, init_guess, args=(mu, Sigma, RF_RATE),
