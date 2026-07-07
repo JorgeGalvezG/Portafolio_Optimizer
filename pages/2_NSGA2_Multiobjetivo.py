@@ -226,7 +226,7 @@ if ejecutar:
     random.seed(SEMILLA)
     np.random.seed(SEMILLA)
 
-    precios = cargar_datos(TICKERS, FECHA_INICIO, FECHA_FIN)
+    precios = cargar_datos(tickers_lista, fecha_ini, fecha_fin)
     if precios.empty or precios.shape[1] == 0:
         st.error("No se pudieron descargar datos válidos para los tickers indicados.")
         st.stop()
