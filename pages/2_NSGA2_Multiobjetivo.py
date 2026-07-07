@@ -316,6 +316,7 @@ if ejecutar:
 
     # Simulación de riqueza GA (máx Sharpe)
     ret_simples = precios.pct_change().dropna()
+    ret_simples['CASH'] = RF / DIAS_ANIO
     w_ga = pesos_frente[idx_best]
 
     riqueza_bh = [capital]
