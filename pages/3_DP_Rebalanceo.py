@@ -170,8 +170,13 @@ if ejecutar:
     Sigma = retornos.cov().values * DIAS_ANIO
 
     # Portafolio objetivo: mínima varianza
-    res = minimize(lambda w: np.sqrt(w @ Sigma @ w), np.ones(N) / N, method="SLSQP",
-                   bounds=[(0, 1)] * N, constraints={"type": "eq", "fun": lambda w: w.sum() - 1})
+    res = res = minimize(
+        lambda w: w @ Sigma @ w,  # <-- Se optimiza la varianza directa sin raíz
+        np.ones(N) / N, 
+        method="SLSQP",
+        bounds=[(0, 1)] * N, 
+        constraints={"type": "eq", "fun": lambda w: w.sum() - 1}
+    )
     w_objetivo = res.x
 
     grilla = generar_grilla(PASO_GRILLA, N)
@@ -191,7 +196,7 @@ if ejecutar:
         return LAMBDA_TC * np.sum(np.abs(w_nuevo - w_actual))
 
     def costo_suboptimalidad(w):
-        return np.sqrt((w - w_objetivo) @ Sigma @ (w - w_objetivo))
+        return np.sqrt(abs((w - w_objetivo) @ Sigma @ (w - w_objetivo)))
 
     def idx_mas_cercano(w):
         return int(np.argmin(np.linalg.norm(grilla - w, axis=1)))
