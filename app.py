@@ -38,22 +38,16 @@ DORADO = "#C5961A"
 st.markdown(
     f"""
     <style>
-        /* Tipografía y fondo */
+        /* Tipografía */
         html, body, [class*="css"] {{
             font-family: 'Calibri', 'Segoe UI', sans-serif;
         }}
-        .stApp {{
-            background-color: #FFFFFF;
-        }}
+        
+        /* (ELIMINADO: .stApp y sidebar backgrounds forzados a blanco/gris) */
 
-        /* MODIFICACIÓN: Hack CSS para renombrar 'app' a 'Dashboard Principal' en el menú de la barra lateral */
-        div[data-testid="stSidebarNav"] ul li:first-child a span {{
-            font-size: 0 !important;
-        }}
-        div[data-testid="stSidebarNav"] ul li:first-child a span::before {{
-            content: "Dashboard Principal" !important;
-            font-size: 14px !important; /* Tamaño estándar del menú de Streamlit */
-            font-weight: 500;
+        /* Sidebar (Solo mantenemos tu borde azul) */
+        section[data-testid="stSidebar"] {{
+            border-right: 3px solid {AZUL};
         }}
 
         /* Títulos */
@@ -61,13 +55,7 @@ st.markdown(
             color: {AZUL};
         }}
 
-        /* Sidebar */
-        section[data-testid="stSidebar"] {{
-            background-color: #F5F6F8;
-            border-right: 3px solid {AZUL};
-        }}
-
-        /* Botón principal */
+        /* Botón principal (Se mantiene fijo porque contrasta bien en ambos temas) */
         div.stButton > button {{
             background-color: {AZUL};
             color: #FFFFFF;
@@ -82,31 +70,31 @@ st.markdown(
             color: #FFFFFF;
         }}
 
-        /* Tarjetas de módulos */
+        /* Tarjetas de módulos ADAPTABLES */
         .modulo-card {{
-            background-color: #FFFFFF;
-            border: 1px solid #E3E6EB;
+            background-color: var(--secondary-background-color);
+            border: 1px solid rgba(128, 128, 128, 0.2);
             border-top: 4px solid {DORADO};
             border-radius: 10px;
             padding: 1.1rem 1.3rem;
             height: 100%;
-            box-shadow: 0 2px 6px rgba(31,56,100,0.08);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
         }}
         .modulo-card h4 {{
             color: {AZUL};
             margin: 0 0 0.4rem 0;
         }}
         .modulo-card p {{
-            color: #333333;
+            color: var(--text-color);
             font-size: 0.92rem;
             margin: 0;
         }}
 
-        /* Disclaimer */
+        /* Disclaimer ADAPTABLE (Fondo semi-transparente) */
         .disclaimer {{
-            background-color: #FDF6E3;
+            background-color: rgba(197, 150, 26, 0.1); /* Dorado al 10% de opacidad */
             border-left: 5px solid {DORADO};
-            color: {GRANATE};
+            color: var(--text-color);
             padding: 0.8rem 1rem;
             border-radius: 6px;
             font-size: 0.88rem;
