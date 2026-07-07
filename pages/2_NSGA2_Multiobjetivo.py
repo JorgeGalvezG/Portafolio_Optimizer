@@ -98,6 +98,13 @@ with st.sidebar:
         format="%d",
     )
 
+    MAX_CASH = st.slider(
+        "Límite máx. Efectivo", 
+        0.0, 1.0, float(st.session_state.get("max_cash", 0.20)), 
+        step=0.05, 
+        format="%.2f"
+    )
+
     st.markdown("---")
     ejecutar = st.button("🚀 Ejecutar Análisis")
 
@@ -115,6 +122,7 @@ st.session_state["tickers"] = tickers_lista
 st.session_state["fecha_ini"] = fecha_ini
 st.session_state["fecha_fin"] = fecha_fin
 st.session_state["capital"] = int(capital)
+st.session_state["max_cash"] = float(MAX_CASH)
 tickers_validos = st.session_state.get("tickers", ["FSM", "VOLCABC1.LM", "ABX.TO", "BVN", "BHP"])
 
 if ejecutar:
@@ -131,15 +139,12 @@ if capital <= 0:
 # --------------------------------------------------------------------------- #
 # Sliders del algoritmo
 # --------------------------------------------------------------------------- #
-col_s1, col_s2, col_s3, col_s4 = st.columns([2, 2, 2, 1])
+col_s1, col_s2, col_s3 = st.columns([2, 2, 2])
 with col_s1:
     MU_POP = st.slider("Tamaño de población (MU)", 50, 300, 100, step=10)
 with col_s2:
     NGEN = st.slider("Número de generaciones (NGEN)", 30, 200, 80, step=10)
 with col_s3:
-    # NUEVO: Slider dinámico para restringir el efectivo en el Algoritmo Genético
-    MAX_CASH = st.slider("Límite máx. Efectivo", 0.0, 1.0, 0.20, step=0.05, format="%.2f")
-with col_s4:
     st.write("")
     st.write("")
     ejecutar = st.button("🧬 Evolucionar")
