@@ -11,6 +11,7 @@ configurados en el sidebar del homepage (app.py).
 
 import io
 import warnings
+import datetime as dt  # <-- IMPORTANTE: Agregado para el manejo de fechas en los inputs
 
 import numpy as np
 import pandas as pd
@@ -31,10 +32,97 @@ AZUL, GRANATE, DORADO = "#1F3864", "#800000", "#C5961A"
 DIAS_ANIO = 252
 RF_RATE = 0.02  # Retorno anualizado del activo CASH (2%)
 
+# --- NUEVO: Hack CSS para mantener el nombre "Dashboard Principal" en la barra lateral ---
+st.markdown(
+    f"""
+    <style>
+        div[data-testid="stSidebarNav"] ul li:first-child a span {{
+            font-size: 0 !important;
+        }}
+        div[data-testid="stSidebarNav"] ul li:first-child a span::before {{
+            content: "Dashboard Principal" !important;
+            font-size: 14px !important;
+            font-weight: 500;
+        }}
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 st.markdown(
     f"<h1 style='color:{AZUL}'>📊 Módulo 1 · Datos y Markowitz</h1>",
     unsafe_allow_html=True,
 )
+
+# --------------------------------------------------------------------------- #
+# NUEVO: SIDEBAR — Configuración de Parámetros (Idéntico a app.py)
+# --------------------------------------------------------------------------- #
+TICKERS_DEFAULT = "FSM, VOLCABC1.LM, ABX.TO, BVN, BHP"
+FECHA_INI_DEFAULT = dt.date(2015, 1, 1)
+FECHA_FIN_DEFAULT = dt.date(2024, 12, 31)
+CAPITAL_DEFAULT = 100_000
+
+with st.sidebar:
+    st.markdown(f"<h2 style='color:{AZUL};margin-bottom:0'>⚙️ Parámetros</h2>",
+                unsafe_allow_html=True)
+    st.caption("Configuración global del análisis")
+
+    tickers_input = st.text_input(
+        "Tickers (separados por coma)",
+        value=st.session_state.get("tickers_raw", TICKERS_DEFAULT),
+        help="Símbolos de Yahoo Finance. Ej: FSM, BHP, BVN",
+    )
+
+    col_f1, col_f2 = st.columns(2)
+    with col_f1:
+        fecha_ini = st.date_input(
+            "Fecha inicio",
+            value=st.session_state.get("fecha_ini", FECHA_INI_DEFAULT),
+            min_value=dt.date(2000, 1, 1),
+            max_value=dt.date.today(),
+        )
+    with col_f2:
+        fecha_fin = st.date_input(
+            "Fecha fin",
+            value=st.session_state.get("fecha_fin", FECHA_FIN_DEFAULT),
+            min_value=dt.date(2000, 1, 1),
+            max_value=dt.date.today(),
+        )
+
+    capital = st.number_input(
+        "Capital a invertir (USD)",
+        min_value=1_000,
+        max_value=100_000_000,
+        value=st.session_state.get("capital", CAPITAL_DEFAULT),
+        step=1_000,
+        format="%d",
+    )
+
+    st.markdown("---")
+    ejecutar = st.button("🚀 Ejecutar Análisis")
+
+    st.markdown("---")
+    st.caption("💡 Los parámetros se comparten entre todas las páginas.")
+
+# Sincronización y reactividad con session_state
+tickers_lista = [t.strip().upper() for t in tickers_input.split(",") if t.strip()]
+
+st.session_state["tickers_raw"] = tickers_input
+st.session_state["tickers"] = tickers_lista
+st.session_state["fecha_ini"] = fecha_ini
+st.session_state["fecha_fin"] = fecha_fin
+st.session_state["capital"] = int(capital)
+
+if ejecutar:
+    st.session_state["analisis_ejecutado"] = True
+
+# Validaciones en el sidebar
+if fecha_ini >= fecha_fin:
+    st.sidebar.error("⚠️ La fecha de inicio debe ser anterior a la fecha de fin.")
+if not tickers_lista:
+    st.sidebar.error("⚠️ Ingresa al menos un ticker.")
+if capital <= 0:
+    st.sidebar.error("⚠️ El capital debe ser mayor que 0.")
 
 # --------------------------------------------------------------------------- #
 # Parámetros desde session_state (con fallback a defaults)
