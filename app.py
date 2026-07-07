@@ -42,8 +42,6 @@ st.markdown(
         html, body, [class*="css"] {{
             font-family: 'Calibri', 'Segoe UI', sans-serif;
         }}
-        
-        /* (ELIMINADO: .stApp y sidebar backgrounds forzados a blanco/gris) */
 
         /* Sidebar (Solo mantenemos tu borde azul) */
         section[data-testid="stSidebar"] {{
@@ -55,7 +53,7 @@ st.markdown(
             color: {AZUL};
         }}
 
-        /* Botón principal (Se mantiene fijo porque contrasta bien en ambos temas) */
+        /* Botón principal */
         div.stButton > button {{
             background-color: {AZUL};
             color: #FFFFFF;
@@ -92,23 +90,24 @@ st.markdown(
 
         /* Disclaimer ADAPTABLE (Fondo semi-transparente) */
         .disclaimer {{
-            background-color: rgba(197, 150, 26, 0.1); /* Dorado al 10% de opacidad */
+            background-color: rgba(197, 150, 26, 0.1);
             border-left: 5px solid {DORADO};
             color: var(--text-color);
             padding: 0.8rem 1rem;
             border-radius: 6px;
             font-size: 0.88rem;
         }}
+
         /* Renombrar 'app' a 'Dashboard Principal' en el menú lateral */
-        div[data-testid="stSidebarNav"] ul li:first-child a span {
+        div[data-testid="stSidebarNav"] ul li:first-child a span {{
             font-size: 0 !important;
-        }
-        div[data-testid="stSidebarNav"] ul li:first-child a span::before {
+        }}
+        div[data-testid="stSidebarNav"] ul li:first-child a span::before {{
             content: "Dashboard Principal" !important;
             font-size: 14px !important;
             font-weight: 500;
             color: var(--text-color);
-        }
+        }}
     </style>
     """,
     unsafe_allow_html=True,
