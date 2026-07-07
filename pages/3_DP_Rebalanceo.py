@@ -118,7 +118,7 @@ if capital <= 0:
 # --------------------------------------------------------------------------- #
 # Sliders del modelo DP
 # --------------------------------------------------------------------------- #
-col_s1, col_s2, col_s3, col_s4 = st.columns([2, 2, 2, 1])
+col_s1, col_s2, col_s3, col_s4, col_s5 = st.columns([2, 2, 2, 2, 2])
 with col_s1:
     LAMBDA_TC = st.slider("λ_TC (costo de transacción)", 0.0001, 0.01, 0.001, step=0.0001, format="%.4f")
 with col_s2:
