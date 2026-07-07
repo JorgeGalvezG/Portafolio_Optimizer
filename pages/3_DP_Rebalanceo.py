@@ -239,7 +239,7 @@ if ejecutar:
     ret_simples['CASH'] = RF / DIAS_ANIO
 
     def simular(w_init, rebalancear_fn):
-        riqueza = [CAPITAL]
+        riqueza = [capital]
         w_t = w_init.copy()
         costos, n_reb = 0.0, 0
         rebalanceo_fechas = []
