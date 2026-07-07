@@ -132,7 +132,9 @@ with col_s1:
 with col_s2:
     T_PERIODOS = st.slider("T (periodos de rebalanceo)", 4, 52, 12, step=1)
 with col_s3:
-    PASO_GRILLA = st.slider("Paso de grilla (discretización)", 0.02, 0.20, 0.20, step=0.02, format="%.2f")
+    # NUEVO: Reemplazamos los decimales por divisiones (5 div = 0.20, 10 div = 0.10, 20 div = 0.05)
+    DIVISIONES_GRILLA = st.slider("Resolución de Grilla", 4, 25, 5, step=1, 
+                                  help="Ej: 5 significa pasos del 20%, 20 significa pasos del 5%.")
 with col_s4:
     st.write("")
     st.write("")
@@ -152,11 +154,27 @@ def cargar_datos(tickers, inicio, fin):
     precios = precios.dropna(how="all").dropna()
     return precios
 
-def generar_grilla(paso, N, max_cash):
-    """Genera pesos discretizados que suman 1 (composiciones enteras) respetando el límite de efectivo."""
-    pasos = np.arange(0, 1 + paso / 2, paso)
-    grilla = [np.array(combo) for combo in product(pasos, repeat=N)
-              if abs(sum(combo) - 1.0) < 1e-6 and combo[-1] <= (max_cash + 1e-6)]
+def generar_composiciones(n_activos, suma_objetivo):
+    """Generador recursivo ultra-rápido que halla combinaciones enteras exactas."""
+    if n_activos == 1:
+        yield (suma_objetivo,)
+        return
+    for i in range(suma_objetivo + 1):
+        for tail in generar_composiciones(n_activos - 1, suma_objetivo - i):
+            yield (i,) + tail
+
+def generar_grilla_optimizada(N, divisiones, max_cash):
+    """Construye la grilla sin evaluar escenarios inútiles y respetando MAX_CASH."""
+    grilla = []
+    # Genera iteraciones enteras (ej: 0, 1, 2, 3... hasta 'divisiones')
+    for w_int in generar_composiciones(N, divisiones):
+        # Transforma los enteros a pesos porcentuales perfectos
+        w_float = np.array(w_int, dtype=float) / divisiones
+        
+        # Filtra si el activo refugio (último) respeta el límite
+        if w_float[-1] <= (max_cash + 1e-7):  
+            grilla.append(w_float)
+            
     return np.array(grilla)
 
 # --------------------------------------------------------------------------- #
@@ -186,7 +204,14 @@ if ejecutar:
                    constraints={"type": "eq", "fun": lambda w: w.sum() - 1})
     w_objetivo = res.x
 
-    grilla = generar_grilla(PASO_GRILLA, N, MAX_CASH)
+    with st.spinner("Construyendo grilla de estados y evaluando Bellman..."):
+        # ¡Llamamos a la nueva función optimizada!
+        grilla = generar_grilla_optimizada(N, DIVISIONES_GRILLA, MAX_CASH)
+        
+        if len(grilla) == 0:
+            st.error("⚠️ La grilla quedó vacía tras aplicar los límites de efectivo.")
+            st.stop()
+        
     G = len(grilla)
 
     # Complejidad
