@@ -146,6 +146,7 @@ if not TICKERS:
     st.error("⚠️ No hay tickers configurados. Vuelve al inicio y define el universo.")
     st.stop()
 
+COLORES = ["#1F3864", "#4472C4", "#CC0000", "#FF6666", "#2E7D32", "#81C784", "gray"]
 # --------------------------------------------------------------------------- #
 # Datos (cacheado)
 # --------------------------------------------------------------------------- #
