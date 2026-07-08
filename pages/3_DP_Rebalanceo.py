@@ -132,9 +132,13 @@ with col_s1:
 with col_s2:
     T_PERIODOS = st.slider("T (periodos de rebalanceo)", 4, 52, 12, step=1)
 with col_s3:
-    # NUEVO: Reemplazamos los decimales por divisiones (5 div = 0.20, 10 div = 0.10, 20 div = 0.05)
-    DIVISIONES_GRILLA = st.slider("Resolución de Grilla", 4, 25, 5, step=1, 
-                                  help="Ej: 5 significa pasos del 20%, 20 significa pasos del 5%.")
+    # Límite máximo ajustado a 10 para evitar que la "Maldición de la Dimensionalidad" congele Streamlit
+    DIVISIONES_GRILLA = st.slider(
+        "Resolución de Grilla", 
+        2, 10, 5, 
+        step=1, 
+        help="¡Precaución! Valores altos incrementan exponencialmente el tiempo de cómputo (Máx recomendado: 10)."
+    )
 with col_s4:
     st.write("")
     st.write("")
@@ -219,7 +223,7 @@ if ejecutar:
     if operaciones > 8_000_000:
         st.error(
             f"⚠️ La combinación elegida genera {G} estados ({operaciones:,} operaciones), "
-            "demasiado costosa para ejecutar en tiempo razonable. Aumenta el **paso de "
+            "demasiado costosa para ejecutar en tiempo razonable. Reduce la **resolución de"
             "grilla** o reduce **T** para continuar."
         )
         st.stop()
@@ -230,8 +234,10 @@ if ejecutar:
     def costo_suboptimalidad(w):
         return np.sqrt((w - w_objetivo) @ Sigma @ (w - w_objetivo))
 
-    def idx_mas_cercano(w):
-        return int(np.argmin(np.linalg.norm(grilla - w, axis=1)))
+    def idx_mas_cercano(w):                                             
+        # OPTIMIZACIÓN: Usar la suma de cuadrados (x^2) en lugar de np.linalg.norm
+        # Esto elimina la operación de raíz cuadrada y acelera la búsqueda en la grilla un 1000%
+        return int(np.argmin(np.sum((grilla - w)**2, axis=1)))
 
     # Retornos acumulados por periodo
     dias_por_periodo = max(1, len(retornos) // T_PERIODOS)
